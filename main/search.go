@@ -73,6 +73,7 @@ func (s *Searcher) load() {
 	s.loadWords()
 	s.loadFiles()
 	s.loadIndexes()
+	s.db.Close()
 }
 
 func (s *Searcher) loadWords() {
