@@ -65,7 +65,6 @@ func (s *Searcher) Search(query string) []Result {
 	for _, ff := range f {
 		doc := s.files[ff.Document_ID]
 		ret = append(ret, Result{URL: doc.url, Title: doc.name, Body: doc.summary})
-		fmt.Println("Title", doc.name, "\n summary", doc.summary)
 	}
 
 	return ret
