@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"sort"
 
@@ -80,7 +79,7 @@ func (s *Searcher) loadWords() {
 	s.words = make(map[string]int)
 	rows, err := s.db.Query("select * from words")
 	if err != nil {
-		fmt.Print(err)
+		log.Print(err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -88,13 +87,13 @@ func (s *Searcher) loadWords() {
 		var Name string
 		err := rows.Scan(&ID, &Name)
 		if err != nil {
-			fmt.Print(err)
+			log.Print(err)
 		}
 		s.words[Name] = ID
 	}
 	err = rows.Err()
 	if err != nil {
-		fmt.Print(err)
+		log.Print(err)
 	}
 }
 
@@ -104,7 +103,7 @@ func (s *Searcher) loadFiles() {
 	rows, err := s.db.Query("select * from documents")
 
 	if err != nil {
-		fmt.Print(err)
+		log.Print(err)
 	}
 	defer rows.Close()
 
@@ -114,7 +113,7 @@ func (s *Searcher) loadFiles() {
 	for rows.Next() {
 		err := rows.Scan(&ID, &Title, &Url, &Summary)
 		if err != nil {
-			fmt.Print(err)
+			log.Print(err)
 		} else {
 			s.files[ID] = doc{Title, Url, Summary}
 		}
@@ -123,7 +122,7 @@ func (s *Searcher) loadFiles() {
 	err = rows.Err()
 
 	if err != nil {
-		fmt.Print(err)
+		log.Print(err)
 	}
 }
 
@@ -133,7 +132,7 @@ func (s *Searcher) loadIndexes() {
 	rows, err := s.db.Query("select * from words_documents")
 
 	if err != nil {
-		fmt.Print(err)
+		log.Print(err)
 	}
 
 	defer rows.Close()
@@ -142,12 +141,12 @@ func (s *Searcher) loadIndexes() {
 		var Word_ID, Document_ID, Freq int
 		err := rows.Scan(&Word_ID, &Document_ID, &Freq)
 		if err != nil {
-			fmt.Print(err)
+			log.Print(err)
 		}
 		s.indexes[Word_ID] = append(s.indexes[Word_ID], pair{Freq, Document_ID})
 	}
 	err = rows.Err()
 	if err != nil {
-		fmt.Print(err)
+		log.Print(err)
 	}
 }
