@@ -4,12 +4,14 @@ import (
 	"database/sql"
 	"log"
 	"sort"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	porterstemmer "github.com/reiver/go-porterstemmer"
 )
 
 type doc struct {
+	ID                 int
 	name, url, summary string
 }
 
@@ -27,6 +29,7 @@ type Searcher struct {
 	words   map[string]int
 	files   map[int]doc
 	indexes map[int][]pair
+	vis     map[int]bool
 	db      *sql.DB
 }
 
@@ -44,7 +47,7 @@ func NewSearcher() *Searcher {
 	searcher.db, err = sql.Open("mysql", "root:root@tcp(127.0.0.1)/mini_google")
 
 	if err != nil {
-		log.Println("Couldn't connect to MySQL DB")
+		go log.Println("Couldn't connect to MySQL DB")
 		log.Panic(err)
 	}
 
@@ -55,18 +58,48 @@ func NewSearcher() *Searcher {
 
 func (s *Searcher) Search(query string) []Result {
 	stemmedQuery := porterstemmer.StemString(query)
-	ret := make([]Result, 0)
+	//ret := make([]Result, 0)
+	ret := s.Search_File_Name(query)
 
 	arr := s.indexes[s.words[stemmedQuery]]
 	sort.Sort(so(arr))
 	f := s.indexes[s.words[stemmedQuery]]
 
 	for _, ff := range f {
-		doc := s.files[ff.Document_ID]
-		ret = append(ret, Result{URL: doc.url, Title: doc.name, Body: doc.summary})
+		if !s.vis[ff.Document_ID] {
+			doc := s.files[ff.Document_ID]
+			ret = append(ret, Result{URL: doc.url, Title: doc.name, Body: doc.summary})
+		}
+		s.vis[ff.Document_ID] = true
 	}
 
 	return ret
+}
+
+func (s *Searcher) Search_File_Name(query string) []Result {
+	s.vis = make(map[int]bool)
+	stemmedQuery := porterstemmer.StemString(query)
+	ret := make([]Result, 0)
+	for _, ff := range s.files {
+		title := ff.name
+		if Contain(stemmedQuery, title) {
+			s.vis[ff.ID] = true
+			ret = append(ret, Result{URL: ff.url, Title: ff.name, Body: ff.summary})
+		}
+	}
+
+	return ret
+}
+
+func Contain(query, title string) bool {
+	words := strings.Split(title, " ")
+	for _, word := range words {
+		stemmedword := porterstemmer.StemString(word)
+		if strings.Contains(stemmedword, query) {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Searcher) load() {
@@ -116,7 +149,7 @@ func (s *Searcher) loadFiles() {
 		if err != nil {
 			log.Print(err)
 		} else {
-			s.files[ID] = doc{Title, Url, Summary}
+			s.files[ID] = doc{ID, Title, Url, Summary}
 		}
 	}
 
